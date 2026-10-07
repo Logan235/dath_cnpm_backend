@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎯 NestJS Authentication Backend
 
-## Getting Started
+## ✅ Đã Fix Xong
 
-First, run the development server:
+### 1. **PassportModule Configuration** ✅
+- Di chuyển PassportModule ra imports chính
+- Register với defaultStrategy: `PassportModule.register({ defaultStrategy: 'jwt' })`
+- File: `src/auth/auth.module.ts`
+
+### 2. **Github Guard Syntax** ✅
+- Sửa `Injectable();` thành `@Injectable()`
+- File: `src/auth/guards/github.guard.ts`
+
+### 3. **OAuth Routes** ✅
+- Tạm thời comment OAuth routes (Google, Github)
+- File: `src/auth/auth.controller.ts`
+
+### 4. **Build & Server** ✅
+- Server build thành công
+- Khởi động trên port **3001**
+
+---
+
+## 🚨 QUAN TRỌNG - BẠN CẦN LÀM NGAY
+
+### **Chạy SQL Script trong pgAdmin:**
+
+1. Mở **pgAdmin**
+2. Kết nối PostgreSQL
+3. Tạo database `ad_monitor` (nếu chưa có)
+4. Right-click `ad_monitor` → **Query Tool**
+5. Mở file `src/database/init.sql`
+6. Copy toàn bộ nội dung → Paste vào Query Tool
+7. Click **Execute** (F5)
+8. Verify: Expand `ad_monitor` → `Schemas` → `public` → `Tables` (phải có 7 tables)
+
+---
+
+## 🚀 Khởi động Server
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd BACKEND
+pnpm run start:dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Expected:**
+```
+[Nest] Nest application successfully started
+Application is running on: http://[::1]:3001
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Test API
 
-## Learn More
+### Register User:
+```powershell
+$body = @{
+    email = "admin@example.com"
+    password = "Admin123456"
+    displayName = "Admin User"
+} | ConvertTo-Json
 
-To learn more about Next.js, take a look at the following resources:
+Invoke-WebRequest -Uri 'http://localhost:3001/auth/register' `
+    -Method POST `
+    -ContentType 'application/json' `
+    -Body $body
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Login:
+```powershell
+$body = @{
+    email = "admin@example.com"
+    password = "Admin123456"
+} | ConvertTo-Json
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Invoke-WebRequest -Uri 'http://localhost:3001/auth/login' `
+    -Method POST `
+    -ContentType 'application/json' `
+    -Body $body
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📊 Status
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Component | Status |
+|-----------|--------|
+| Database Connection | ✅ |
+| PassportModule | ✅ |
+| LocalStrategy | ✅ |
+| JwtStrategy | ✅ |
+| Server Running | ✅ Port 3001 |
+| Database Tables | ⚠️ **RUN init.sql** |
+
+---
+
+## 📁 Files
+
+- `API_TEST.md` - Chi tiết test API
+- `src/database/init.sql` - ⚠️ Cần chạy trong pgAdmin
+- `.env` - Database config
+
+---
+
+**Sau khi chạy init.sql, test API và báo kết quả!** 🚀

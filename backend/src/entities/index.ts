@@ -1,0 +1,86 @@
+export * from './system.entities';
+export * from './info-source.entities';
+export * from './ad-processing.entities';
+export * from './violation.entities';
+
+import {
+  Department,
+  Permission,
+  Role,
+  User,
+  RoleRequest,
+  AuditLog,
+  SystemParameter,
+  Notification,
+} from './system.entities';
+import {
+  LegalDocumentType,
+  LegalDocument,
+  FacilityType,
+  Facility,
+  License,
+  SourceCategory,
+  CrawlSource,
+  Topic,
+  Keyword,
+  CrawlSchedule,
+  CrawlJob,
+} from './info-source.entities';
+import {
+  AdItem,
+  WhitelistEntry,
+  AiModel,
+  AiAnalysis,
+  AdReview,
+  AiTrainingFeedback,
+} from './ad-processing.entities';
+import {
+  ViolationType,
+  Suspect,
+  PlatformAccount,
+  Violation,
+  PenaltyDecision,
+  PrecheckRequest,
+  FacilityFeedback,
+  SuspectMatchCandidate,
+  InvestigationCase,
+  CaseUpdate,
+} from './violation.entities';
+
+export const ALL_ENTITIES = [
+  Department,
+  Permission,
+  Role,
+  User,
+  RoleRequest,
+  AuditLog,
+  SystemParameter,
+  Notification,
+  LegalDocumentType,
+  LegalDocument,
+  FacilityType,
+  Facility,
+  License,
+  SourceCategory,
+  CrawlSource,
+  Topic,
+  Keyword,
+  CrawlSchedule,
+  CrawlJob,
+  AdItem,
+  WhitelistEntry,
+  AiModel,
+  AiAnalysis,
+  AdReview,
+  AiTrainingFeedback,
+  ViolationType,
+  Suspect,
+  PlatformAccount,
+  Violation,
+  PenaltyDecision,
+  PrecheckRequest,
+  FacilityFeedback,
+  SuspectMatchCandidate,
+  InvestigationCase,
+  CaseUpdate,
+];

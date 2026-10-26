@@ -1,0 +1,7 @@
+# Không đưa thư mục cài đặt / build lên Git (tránh lỗi file > 100MB khi push)
+/node_modules
+/.next/
+/out/
+.env*.local
+*.tsbuildinfo
+next-env.d.ts

@@ -44,6 +44,7 @@ import { AD_STATUS, LABELS } from '../common/constants';
 import { createAdItems } from './ad-intake';
 import * as D from './ad-processing.dto';
 import { todayLocal } from '../common/utils/date';
+import { QueueService } from '../queue/queue.service';
 
 const REVIEWABLE = [AD_STATUS.AI_ANALYZED, AD_STATUS.IN_REVIEW, AD_STATUS.NEED_MORE_INFO] as string[];
 const POSITIVE = ['VIOLATION', 'SUSPECTED'];
@@ -78,6 +79,7 @@ export class AdItemsService {
     private readonly ai: AiAnalyzerService,
     private readonly params: ParamsService,
     private readonly audit: AuditService,
+    private readonly queue: QueueService,
   ) {}
 
   list(q: D.AdItemQueryDto, actor: Actor) {
@@ -351,16 +353,100 @@ export class AdItemsService {
 
   async analyzeItems(ids: string[] | undefined, actor: Actor) {
     const where: any = ids?.length ? { id: In(ids), status: In([AD_STATUS.FILTERED, AD_STATUS.NEED_MORE_INFO, AD_STATUS.AI_ANALYZED]) } : { status: AD_STATUS.FILTERED };
-    const items = await this.repo.find({ where, order: { id: 'ASC' } });
-    const results: any[] = [];
-    for (const it of items) {
-      const { analysis } = await this.analyzeOne(it);
-      results.push({ id: it.id, code: it.code, label: analysis.label, confidence: analysis.confidence, violationTypes: analysis.violationTypes, priority: analysis.priorityScore });
+    const items = await this.repo.find({ where, relations: { schedule: true }, order: { id: 'ASC' } });
+    
+    if (!items.length) {
+      return { queued: 0, message: 'Không có mẫu tin nào đủ điều kiện phân tích' };
     }
-    if (items.length) {
-      await this.audit.log(actor, { action: 'AI_ANALYZE', module: 'AD_PROCESSING', entityType: 'ad_item', description: `AI phân tích ${items.length} mẫu tin`, metadata: { ids: items.map((i) => i.id) } });
+
+    // Kiểm tra RabbitMQ có enabled không
+    if (!this.queue.isEnabled()) {
+      // Fallback: Sử dụng built-in AI (sync mode)
+      this.logger.warn('RabbitMQ not configured, using built-in AI (sync mode)');
+      const results: any[] = [];
+      for (const it of items) {
+        const { analysis } = await this.analyzeOne(it);
+        results.push({ 
+          id: it.id, 
+          code: it.code, 
+          label: analysis.label, 
+          confidence: analysis.confidence, 
+          violationTypes: analysis.violationTypes, 
+          priority: analysis.priorityScore 
+        });
+      }
+      await this.audit.log(actor, { 
+        action: 'AI_ANALYZE', 
+        module: 'AD_PROCESSING', 
+        entityType: 'ad_item', 
+        description: `AI phân tích ${items.length} mẫu tin (built-in)`, 
+        metadata: { ids: items.map((i) => i.id) } 
+      });
+      return { analyzed: results.length, results };
     }
-    return { analyzed: results.length, results };
+
+    // RabbitMQ Mode: Publish vào queue
+    let queued = 0;
+    let failed = 0;
+
+    for (const item of items) {
+      try {
+        // 1. Update status → AI_ANALYZING (trigger sẽ sync sang crawl_ads)
+        item.status = AD_STATUS.AI_ANALYZING;
+        await this.repo.save(item);
+
+        // 2. Extract keywords
+        const keywords = item.schedule?.primaryKeywords
+          ? item.schedule.primaryKeywords.split(',').map(k => k.trim()).filter(Boolean)
+          : [];
+
+        // 3. Extract images/videos từ media
+        const images = item.media
+          .filter(m => m.type === 'IMAGE')
+          .map(m => m.url);
+        
+        const videos = item.media
+          .filter(m => m.type === 'VIDEO')
+          .map(m => m.url);
+
+        // 4. Publish vào RabbitMQ
+        await this.queue.publishDirectContentToAI(
+          item.content,
+          {
+            url: item.sourceUrl,
+            crawl_source: item.platform,
+            images: images.length > 0 ? images : undefined,
+            keyword: keywords.join(','),
+            request_id: `ad_item_${item.id}`,
+          },
+        );
+
+        queued++;
+        this.logger.log(`✅ Queued ad_item ${item.id} for AI analysis`);
+        
+      } catch (error) {
+        this.logger.error(`Failed to queue item ${item.id}: ${error.message}`);
+        
+        // Rollback status
+        item.status = AD_STATUS.FILTERED;
+        await this.repo.save(item);
+        failed++;
+      }
+    }
+
+    await this.audit.log(actor, {
+      action: 'AI_ANALYZE',
+      module: 'AD_PROCESSING',
+      entityType: 'ad_item',
+      description: `Đã gửi ${queued} mẫu tin vào hàng đợi AI (RabbitMQ)`,
+      metadata: { queued, failed, ids: items.map((i) => i.id) },
+    });
+
+    return {
+      queued,
+      failed,
+      message: `Đã gửi ${queued} mẫu tin vào hàng đợi AI. AI Service sẽ xử lý tuần tự.${failed > 0 ? ` (${failed} thất bại)` : ''}`,
+    };
   }
 
   async classify(id: string, dto: D.ClassifyDto, actor: Actor) {

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { ALL_ENTITIES } from './entities';
 import { CoreModule } from './core/core.module';
@@ -9,12 +11,16 @@ import { SystemAdminModule } from './system-admin/system-admin.module';
 import { InfoSourceModule } from './info-source/info-source.module';
 import { AdProcessingModule } from './ad-processing/ad-processing.module';
 import { ViolationsModule } from './violations/violations.module';
+import { QueueModule } from './queue/queue.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ScheduleModule.forRoot(),
+    HttpModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -33,6 +39,8 @@ const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
         extra: { options: `-c timezone=${LOCAL_TZ}` },
       }),
     }),
+    QueueModule,
+    WebhooksModule,
     CoreModule,
     AuthModule,
     SystemAdminModule,

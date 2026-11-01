@@ -82,6 +82,7 @@ export const AD_STATUS = {
   QC_REJECTED: 'QC_REJECTED', // Bị loại ở bước kiểm tra nhanh QC
   FILTER_REJECTED: 'FILTER_REJECTED', // Bị loại bởi bộ lọc tự động
   FILTERED: 'FILTERED', // Đã lọc — chờ AI phân tích
+  AI_ANALYZING: 'AI_ANALYZING', // AI đang phân tích
   AI_ANALYZED: 'AI_ANALYZED', // AI đã phân tích — chờ chuyên viên
   IN_REVIEW: 'IN_REVIEW', // Chuyên viên đã nhận xử lý
   NEED_MORE_INFO: 'NEED_MORE_INFO', // Cần bổ sung căn cứ

@@ -1,16 +1,22 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto, RegisterDto } from './dto/register.dto';
 import { LoginDto, RefreshDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
+import { GoogleAuthGuard } from './guards/google.guard';
 import { User } from '../entities';
 import { Actor, CurrentUser, Public } from '../common/auth';
 
 @ApiTags('0. Đăng nhập / Đăng ký')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -30,12 +36,37 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @ApiBody({ type: LoginDto })
   @ApiOperation({
-    summary: 'Đăng nhập (chọn vai trò)',
+    summary: 'Đăng nhập',
     description:
-      'Trả accessToken: bấm nút "Authorize" ở đầu trang Swagger, dán token để gọi các API khác. Chọn vai trò không có trong tài khoản -> 403 ROLE_NOT_GRANTED.',
+      'Trả accessToken và tự động phân quyền theo tài khoản (không cần chọn vai trò thủ công).',
   })
   login(@Req() req: { user: User; body: LoginDto; ip?: string; headers: any }) {
     return this.authService.login(req.user, req.body, { ip: req.ip, userAgent: req.headers?.['user-agent'] });
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Đăng nhập bằng Google OAuth 2.0' })
+  googleAuth() {
+    // Guard tự chuyển hướng sang Google
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Callback xử lý xác thực từ Google OAuth 2.0' })
+  async googleAuthRedirect(@Req() req: { user: User; ip?: string; headers: any }, @Res() res: Response) {
+    const user = req.user;
+    const loginResult = await this.authService.login(user, {}, { ip: req.ip, userAgent: req.headers?.['user-agent'] });
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    
+    // Chuyển hướng về frontend kèm token dạng query params hoặc lưu trữ phù hợp
+    const redirectUrl = loginResult.role
+      ? `${frontendUrl}/login?token=${loginResult.accessToken}&role=${loginResult.role}`
+      : `${frontendUrl}/role-request?token=${loginResult.accessToken}`;
+    
+    return res.redirect(redirectUrl);
   }
 
   @Public()

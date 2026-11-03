@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import AppShell from "./AppShell";
 import { PORTALS, homeFor } from "@/config/portals";
 import { fetchMe, getSession, logout, refreshWithRole, saveSession } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 /**
  * Bọc toàn bộ một khu vực (vd. /admin/...). Chỉ hiển thị khi:
@@ -18,6 +19,7 @@ export default function PortalShell({ portal: portalKey, children }) {
   const pathname = usePathname();
   const portal = PORTALS[portalKey];
   const [session, setSession] = useState(null);
+  const [badgeCounts, setBadgeCounts] = useState({});
 
   useEffect(() => {
     const s = getSession();
@@ -73,6 +75,27 @@ export default function PortalShell({ portal: portalKey, children }) {
         setSession(next);
       }
     });
+
+    // Fetch việc cần làm và số thông báo chưa đọc để hiển thị chấm đỏ trên sidebar
+    Promise.all([
+      api.get("/statistics/my-tasks").catch(() => null),
+      api.get("/notifications/unread-count").catch(() => null),
+    ]).then(([tasksRes, unreadRes]) => {
+      if (cancelled) return;
+      const t = tasksRes?.data || tasksRes || {};
+      const unread = unreadRes?.unread || unreadRes?.data?.unread || 0;
+      setBadgeCounts({
+        "role-requests": t.roleRequests || 0,
+        "extract-results": t.reviewQueue || 0,
+        "conflicts": t.conflicts || 0,
+        "facility-feedback": t.facilityFeedbacks || 0,
+        "prechecks": t.prechecks || 0,
+        "handling": t.penaltyApprovals || 0,
+        "violations": t.violations || 0,
+        "notifications": unread,
+      });
+    });
+
     return () => {
       cancelled = true;
     };
@@ -108,6 +131,7 @@ export default function PortalShell({ portal: portalKey, children }) {
       currentRole={session.role}
       onSwitchRole={handleSwitchRole}
       onLogout={handleLogout}
+      badges={badgeCounts}
     >
       {children}
     </AppShell>

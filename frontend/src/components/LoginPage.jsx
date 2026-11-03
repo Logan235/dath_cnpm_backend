@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { LOGO_SRC } from "@/assets/icons";
 import Link from "next/link";
 import { PORTALS, ROLE_ORDER, homeFor } from "@/config/portals";
-import { getApiBase, getLastRole, getSession, loginWithRole } from "@/lib/auth";
+import { getApiBase, getLastRole, getSession, loginWithRole, saveSession } from "@/lib/auth";
 import { label } from "@/lib/labels";
 
 function errorText(result, roleLabel) {
@@ -27,6 +27,7 @@ function errorText(result, roleLabel) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +49,25 @@ export default function LoginPage() {
     if (new URLSearchParams(window.location.search).get("expired")) {
       setNotice("Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.");
     }
-  }, [router]);
+
+    // Xử lý callback từ Google OAuth: backend redirect về /login?token=xxx&role=xxx
+    const token = searchParams?.get("token");
+    const roleParam = searchParams?.get("role");
+    if (token && roleParam && PORTALS[roleParam]) {
+      // Lưu session vào localStorage
+      saveSession({
+        accessToken: token,
+        refreshToken: "", // Google OAuth không trả refresh token, backend sẽ cấp mới khi cần
+        role: roleParam,
+        user: null, // Sẽ được fetch khi vào PortalShell
+        permissions: [],
+        availableRoles: [roleParam],
+        needsRoleRequest: false,
+      });
+      // Chuyển hướng đến trang chủ của vai trò
+      router.replace(homeFor({ role: roleParam }));
+    }
+  }, [router, searchParams]);
 
   const goAfterLogin = (session) => {
     const portal = PORTALS[session.role];
@@ -118,34 +137,38 @@ export default function LoginPage() {
 
         <main className="login-panel">
           <h1 className="login-title">Đăng nhập</h1>
-          <p className="login-sub">Chọn vai trò, sau đó nhập tài khoản được cấp cho vai trò đó.</p>
+          <p className="login-sub">Đăng nhập tài khoản công dân hoặc email công vụ để truy cập hệ thống.</p>
 
           {notice && <div className="login-notice">{notice}</div>}
 
+          {/* Nút đăng nhập Google OAuth */}
+          <div style={{ marginBottom: 20 }}>
+            <button
+              type="button"
+              className="ui-btn ui-btn-outline"
+              style={{ width: "100%", justifyContent: "center", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}
+              onClick={() => {
+                const apiBase = getApiBase();
+                window.location.href = `${apiBase}/auth/google`;
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.1 0-5.74-2.09-6.68-4.91H1.32v3.15C3.32 21.32 7.37 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.32 14.29c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.56H1.32C.48 8.24 0 10.06 0 12s.48 3.76 1.32 5.44l4-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.32 2.68 1.32 6.56l4 3.15c.94-2.82 3.58-4.96 6.68-4.96z"/>
+              </svg>
+              <span>Đăng nhập bằng Google (Gmail)</span>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", margin: "16px 0", color: "var(--ink-soft)", fontSize: 13 }}>
+            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+            <span style={{ padding: "0 10px" }}>hoặc đăng nhập bằng Email / Mật khẩu</span>
+            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+          </div>
+
           <form onSubmit={handleSubmit} noValidate>
-            <fieldset className="login-roles">
-              <legend className="login-label">Vai trò</legend>
-              {ROLE_ORDER.map((key) => {
-                const p = PORTALS[key];
-                const checked = role === key;
-                return (
-                  <label key={key} className={`login-role${checked ? " is-checked" : ""}`}>
-                    <input
-                      type="radio"
-                      name="role"
-                      value={key}
-                      checked={checked}
-                      onChange={() => {
-                        setRole(key);
-                        setError("");
-                      }}
-                    />
-                    <span className="login-role-name">{p.roleLabel}</span>
-                    <span className="login-role-module">{p.moduleLabel}</span>
-                  </label>
-                );
-              })}
-            </fieldset>
 
             <label className="login-label" htmlFor="login-email">Email</label>
             <input

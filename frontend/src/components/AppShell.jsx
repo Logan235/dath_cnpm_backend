@@ -9,7 +9,7 @@ import Footer from "./Footer";
  * Khung giao diện (Header + Sidebar + nội dung + Footer) của một khu vực theo vai trò.
  * `nav` lấy từ src/config/portals.js, nên mỗi vai trò thấy sidebar riêng.
  */
-function AppShell({ children, nav, base, userName, roleLabel, roles, currentRole, onSwitchRole, onLogout }) {
+function AppShell({ children, nav, base, userName, roleLabel, roles, currentRole, onSwitchRole, onLogout, badges }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -24,7 +24,7 @@ function AppShell({ children, nav, base, userName, roleLabel, roles, currentRole
         onSwitchRole={onSwitchRole}
         onLogout={onLogout}
       />
-      <Sidebar nav={nav} isOpen={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
+      <Sidebar nav={nav} isOpen={sidebarOpen} onNavigate={() => setSidebarOpen(false)} badges={badges} />
 
       {/* Lớp phủ tối phía sau sidebar khi mở trên mobile, bấm vào để đóng lại */}
       <div className={`sidebar-overlay${sidebarOpen ? " is-visible" : ""}`} onClick={() => setSidebarOpen(false)} />

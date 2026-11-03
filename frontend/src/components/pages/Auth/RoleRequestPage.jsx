@@ -140,9 +140,14 @@ export default function RoleRequestPage() {
             <strong>Sở Y tế TP. Hồ Chí Minh</strong>
           </Link>
           {session?.accessToken && (
-            <Button variant="secondary" size="sm" icon={LogOut} onClick={signOut}>
-              Đăng xuất
-            </Button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="outline" size="sm" onClick={() => router.push("/citizen/pre-check")}>
+                Về khu vực công dân
+              </Button>
+              <Button variant="secondary" size="sm" icon={LogOut} onClick={signOut}>
+                Đăng xuất
+              </Button>
+            </div>
           )}
         </div>
 

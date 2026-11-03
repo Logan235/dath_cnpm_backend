@@ -119,28 +119,15 @@ export class AuthService {
     const roleCodes = activeRoles.map((r) => r.roleCode);
     let role: string | null = null;
 
-    if (dto.role) {
-      role = String(dto.role).trim().toUpperCase();
-      if (!Object.values(ROLE).includes(role as any) && !(await this.roleRepository.findOne({ where: { roleCode: role } }))) {
-        throw new BadRequestException('Vai trò không hợp lệ');
+    // Trong Production Mode: Không cho phép client gửi dto.role tự do để chọn vai trò.
+    // Nếu tài khoản có vai trò, tự động lấy vai trò ưu tiên cao nhất.
+    // Nếu là tài khoản cán bộ chưa có vai trò (roles: []), role sẽ giữ là null.
+    if (roleCodes.length > 0) {
+      if (dto.role && roleCodes.includes(String(dto.role).trim().toUpperCase())) {
+        role = String(dto.role).trim().toUpperCase();
+      } else {
+        role = [...roleCodes].sort((a, b) => ROLE_PRIORITY.indexOf(a as any) - ROLE_PRIORITY.indexOf(b as any))[0];
       }
-      if (!roleCodes.includes(role)) {
-        const pending = await this.roleRequests.findOne({ where: { userId: user.id, status: 'PENDING' } });
-        throw new ForbiddenException({
-          statusCode: 403,
-          error: 'ROLE_NOT_GRANTED',
-          message: `Tài khoản này không có vai trò "${LABELS.role[role] ?? role}".`,
-          availableRoles: roleCodes,
-          accountType: user.accountType,
-          pendingRoleRequest: pending ? { id: pending.id, requestedRoleCode: pending.requestedRoleCode } : null,
-          hint:
-            user.accountType === ACCOUNT_TYPE.OFFICIAL
-              ? 'Đăng nhập không chọn vai trò rồi gửi form xin cấp quyền (POST /role-requests)'
-              : undefined,
-        });
-      }
-    } else if (roleCodes.length) {
-      role = [...roleCodes].sort((a, b) => ROLE_PRIORITY.indexOf(a as any) - ROLE_PRIORITY.indexOf(b as any))[0];
     }
 
     const tokens = await this.issueTokens(user, role);

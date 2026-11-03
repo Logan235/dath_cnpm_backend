@@ -17,7 +17,7 @@ function matches(pathname, item) {
  * Sidebar nhận danh sách menu `nav` của khu vực (vai trò) hiện tại — xem src/config/portals.js
  * Nhóm menu chứa trang đang xem tự mở; các nhóm khác mở khi người dùng bấm vào.
  */
-function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
+function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate, badges = {} }) {
   const pathname = usePathname() || "";
   const [openMenus, setOpenMenus] = useState([]);
 
@@ -48,6 +48,30 @@ function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
     textDecoration: "none",
   };
 
+  // Render badge số lượng
+  const renderBadge = (count) => {
+    if (!count || count <= 0) return null;
+    return (
+      <span
+        style={{
+          background: "#EA4335",
+          color: "#fff",
+          fontSize: 10,
+          fontWeight: 700,
+          lineHeight: 1,
+          padding: "2px 5px",
+          borderRadius: 999,
+          minWidth: 16,
+          textAlign: "center",
+          flexShrink: 0,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+        }}
+      >
+        {count > 99 ? "99+" : count}
+      </span>
+    );
+  };
+
   return (
     <nav
       className={`app-sidebar${mobileOpen ? " is-open" : ""}`}
@@ -68,6 +92,8 @@ function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
           const isOpen = openMenus.includes(item.key);
           const isActiveParent = matches(pathname, item) || childActive;
 
+          const badgeCount = badges[item.key] || 0;
+
           const content = (
             <div
               style={{
@@ -78,6 +104,7 @@ function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
             >
               <img src={item.iconSrc} alt="" style={{ width: 24, height: 24, objectFit: "contain", flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{item.label}</span>
+              {renderBadge(badgeCount)}
               {hasChildren &&
                 (isOpen ? <ChevronDown size={14} color="#777" /> : <ChevronRight size={14} color="#777" />)}
             </div>
@@ -115,6 +142,7 @@ function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
                 >
                   {item.children.map((child) => {
                     const isActive = matches(pathname, child);
+                    const childBadgeCount = badges[child.key] || 0;
                     return (
                       <Link
                         key={child.key}
@@ -133,7 +161,8 @@ function Sidebar({ nav = [], isOpen: mobileOpen = false, onNavigate }) {
                           textDecoration: "none",
                         }}
                       >
-                        {child.label}
+                        <span style={{ flex: 1 }}>{child.label}</span>
+                        {renderBadge(childBadgeCount)}
                       </Link>
                     );
                   })}

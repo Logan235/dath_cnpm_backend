@@ -10,6 +10,7 @@ import { logout } from "@/lib/auth";
 import { useSession } from "@/lib/hooks";
 import Button from "./ui/Button";
 import Footer from "./Footer";
+import RoleRequestStatusBanner from "./RoleRequestStatusBanner";
 
 /**
  * Khung của khu vực công khai (/citizen/...). Không bắt đăng nhập:
@@ -23,10 +24,10 @@ export default function PublicShell({ children }) {
   const [open, setOpen] = useState(false);
   const loggedIn = !!session?.accessToken;
   const nav = PORTALS.CITIZEN.nav.filter((n) => !n.requiresLogin || loggedIn);
-  const isStaff = loggedIn && session.role && session.role !== "CITIZEN";
 
   return (
     <>
+      <RoleRequestStatusBanner />
       <header className="pub-header">
         <div className="pub-header-inner">
           <Link href="/citizen/pre-check" className="pub-brand">
@@ -59,11 +60,6 @@ export default function PublicShell({ children }) {
                 <span style={{ fontSize: 13, fontWeight: 600, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={session.user?.email}>
                   {session.user?.fullName || session.user?.email}
                 </span>
-                {(isStaff || !session.role) && (
-                  <Button size="sm" variant="secondary" icon={LayoutDashboard} onClick={() => router.push(homeFor(session))} title="Khu vực làm việc">
-                    <span className="pub-hide-sm">Khu vực làm việc</span>
-                  </Button>
-                )}
                 <Button
                   size="sm"
                   variant="ghost"

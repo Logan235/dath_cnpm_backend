@@ -9,6 +9,7 @@ import { LocalAuthGuard } from './guards/local.guard';
 import { GoogleAuthGuard } from './guards/google.guard';
 import { User } from '../entities';
 import { Actor, CurrentUser, Public } from '../common/auth';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 @ApiTags('0. Đăng nhập / Đăng ký')
 @Controller('auth')
@@ -33,12 +34,13 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(200)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(ThrottlerGuard, LocalAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiBody({ type: LoginDto })
   @ApiOperation({
     summary: 'Đăng nhập',
     description:
-      'Trả accessToken và tự động phân quyền theo tài khoản (không cần chọn vai trò thủ công).',
+      'Trả accessToken và tự động phân quyền theo tài khoản (giới hạn 5 lần/phút).',
   })
   login(@Req() req: { user: User; body: LoginDto; ip?: string; headers: any }) {
     return this.authService.login(req.user, req.body, { ip: req.ip, userAgent: req.headers?.['user-agent'] });

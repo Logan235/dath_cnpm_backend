@@ -19,9 +19,13 @@ import { SuspectMatchingService, ViolationIntakeService } from './violation-inta
       global: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'default_backup_secret',
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET must be set in environment variables');
+        }
+        return { secret };
+      },
     }),
   ],
   providers: [

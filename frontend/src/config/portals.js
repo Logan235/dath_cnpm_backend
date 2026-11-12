@@ -19,7 +19,8 @@ export const PORTALS = {
   ADMIN: {
     role: "ADMIN",
     base: "/admin",
-    home: "/admin/dashboard",
+    home: "/admin",
+    firstPage: "/admin/dashboard",
     roleLabel: "Quản trị hệ thống",
     moduleLabel: "Cơ cấu tổ chức, vai trò, người dùng, tài khoản, duyệt cấp quyền, nhật ký",
     nav: [
@@ -58,7 +59,8 @@ export const PORTALS = {
   SPECIALIST: {
     role: "SPECIALIST",
     base: "/specialist",
-    home: "/specialist/dashboard",
+    home: "/specialist",
+    firstPage: "/specialist/dashboard",
     roleLabel: "Chuyên viên Sở Y tế",
     moduleLabel: "Nguồn thông tin, xử lý quảng cáo, đánh giá kết quả AI, hồ sơ vi phạm",
     nav: [
@@ -114,7 +116,8 @@ export const PORTALS = {
   MANAGER: {
     role: "MANAGER",
     base: "/manager",
-    home: "/manager/dashboard",
+    home: "/manager",
+    firstPage: "/manager/dashboard",
     roleLabel: "Cán bộ quản lý / Lãnh đạo",
     moduleLabel: "Phê duyệt xử phạt, giải quyết xung đột đánh giá, duyệt cấp quyền, báo cáo",
     nav: [
@@ -147,7 +150,8 @@ export const PORTALS = {
   CYBER_POLICE: {
     role: "CYBER_POLICE",
     base: "/cyber-security",
-    home: "/cyber-security/dashboard",
+    home: "/cyber-security",
+    firstPage: "/cyber-security/dashboard",
     roleLabel: "Cán bộ Phòng An ninh mạng",
     moduleLabel: "Tiếp nhận hồ sơ chuyển, điều tra xác minh, đối tượng vi phạm",
     nav: [
@@ -178,7 +182,8 @@ export const PORTALS = {
   FACILITY: {
     role: "FACILITY",
     base: "/facility",
-    home: "/facility/profile",
+    home: "/facility",
+    firstPage: "/facility/profile",
     roleLabel: "Cơ sở khám chữa bệnh",
     moduleLabel: "Hồ sơ cơ sở, giải trình vi phạm, kiểm tra trước nội dung quảng cáo",
     nav: [
@@ -201,6 +206,7 @@ export const PORTALS = {
     role: "CITIZEN",
     base: "/citizen",
     home: "/citizen/pre-check",
+    firstPage: "/citizen/pre-check",
     roleLabel: "Người dân",
     moduleLabel: "Kiểm tra quảng cáo, tra cứu cơ sở, phản ánh — dùng được cả khi không đăng nhập",
     public: true,

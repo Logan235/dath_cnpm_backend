@@ -72,7 +72,9 @@ export default function LoginPage() {
   const goAfterLogin = (session) => {
     const portal = PORTALS[session.role];
     const next = new URLSearchParams(window.location.search).get("next") || "";
-    const okNext = portal && (next.startsWith(portal.base + "/") || next.startsWith("/citizen/"));
+    const okNext = portal && session.role !== "CITIZEN"
+      ? next.startsWith(portal.base + "/")
+      : portal && (next.startsWith(portal.base + "/") || next.startsWith("/citizen/"));
     router.replace(okNext ? next : homeFor(session));
   };
 

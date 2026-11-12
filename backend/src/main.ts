@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { UPLOAD_ROOT } from './core/files';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // exposedHeaders: để frontend đọc được tên file khi tải Excel / Word
   app.enableCors({ exposedHeaders: ['Content-Disposition'] });
@@ -42,7 +43,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT || 3001);
   await app.listen(port, '0.0.0.0');
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger (test API):        http://localhost:${port}/api-docs`);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger (test API):        http://localhost:${port}/api-docs`);
 }
 bootstrap();

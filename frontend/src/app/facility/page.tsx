@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import WorkspaceWelcomePage from "@/components/pages/WorkspaceWelcomePage";
 
 export default function Page() {
-  redirect("/facility/profile");
+  return <WorkspaceWelcomePage portalKey="FACILITY" />;
 }
+

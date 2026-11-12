@@ -102,8 +102,12 @@ export class AccessGuard implements CanActivate {
 
     if (token) {
       try {
+        const secret = this.config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new UnauthorizedException('JWT_SECRET must be configured');
+        }
         const payload: any = await this.jwt.verifyAsync(token, {
-          secret: this.config.get<string>('JWT_SECRET') || 'default_backup_secret',
+          secret,
         });
         req.user = await this.buildActor(payload);
       } catch (e) {

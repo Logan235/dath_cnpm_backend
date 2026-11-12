@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import WorkspaceWelcomePage from "@/components/pages/WorkspaceWelcomePage";
 
 export default function Page() {
-  redirect("/admin/dashboard");
+  return <WorkspaceWelcomePage portalKey="ADMIN" />;
 }
+

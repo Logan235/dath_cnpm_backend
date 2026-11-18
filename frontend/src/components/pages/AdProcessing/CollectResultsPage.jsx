@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Filter, Send, Trash2, XCircle } from "lucide-react";
 import Tabs from "@/components/Tabs";
 import { api } from "@/lib/api";
 import { useAction } from "@/lib/hooks";
 import { label, options } from "@/lib/labels";
-import { Alert, Button, Field, Modal, Page, PageHeader, Select, Steps, TextArea, confirmDialog, toast } from "@/components/ui";
+import { ActionCompletionModal, Alert, Button, Field, Modal, Page, PageHeader, Select, Steps, TextArea, confirmDialog, toast } from "@/components/ui";
 import AdItemsBoard from "./AdItemsBoard";
 
 const PIPELINE = ["Thu thập", "Kiểm tra nhanh / lọc", "AI phân tích", "Chuyên viên đánh giá", "Kết luận"];
@@ -18,9 +19,11 @@ function analyzedText(a) {
 
 /** Kết quả thu thập tin: kiểm tra nhanh (chuyển tiếp / loại bỏ), lọc tự động */
 export default function CollectResultsPage() {
+  const router = useRouter();
   const [tab, setTab] = useState("pending");
   const [discard, setDiscard] = useState(null); // { ids, reason, note, ctx }
   const [result, setResult] = useState(null);
+  const [completeModal, setCompleteModal] = useState(null);
   const [busy, run] = useAction();
 
   const forward = async (ctx, ids) => {
@@ -28,8 +31,13 @@ export default function CollectResultsPage() {
     if (!(await confirmDialog({ title: "Chuyển tiếp xử lý", message: `Chuyển ${ids.length} mẫu tin sang bước lọc và AI phân tích? Thao tác không hoàn tác được.`, confirmText: "Chuyển tiếp" }))) return;
     try {
       const r = await api.post("/ad-items/qc/decision", { ids, action: "FORWARD", confirm: true });
-      setResult({ tone: "success", text: `Đã chuyển tiếp ${r.processed.length} mẫu tin.${r.skipped.length ? ` Bỏ qua ${r.skipped.length} mẫu tin không ở trạng thái chờ kiểm tra.` : ""}${analyzedText(r.autoAnalyzed)}` });
       ctx.reload();
+      setCompleteModal({
+        title: "Chuyển tiếp dữ liệu thành công",
+        message: `Đã chuyển ${r.processed.length} mẫu tin sang khâu trích xuất và phân tích AI.`,
+        proceedText: "Tiến tới Đánh giá kết quả AI",
+        onProceed: () => router.push("/specialist/extract-results"),
+      });
     } catch (e) {
       toast.error(e);
     }
@@ -177,6 +185,17 @@ export default function CollectResultsPage() {
           </div>
         )}
       </Modal>
+
+      {completeModal && (
+        <ActionCompletionModal
+          open={!!completeModal}
+          title={completeModal.title}
+          message={completeModal.message}
+          proceedText={completeModal.proceedText}
+          onStay={() => setCompleteModal(null)}
+          onProceed={completeModal.onProceed}
+        />
+      )}
     </Page>
   );
 }

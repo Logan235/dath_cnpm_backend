@@ -1,5 +1,6 @@
 export { default as Button } from "./Button";
 export { default as Modal } from "./Modal";
+export { ActionCompletionModal } from "./ActionCompletionModal";
 export { default as DataTable, Pager, PagedTable } from "./DataTable";
 export { default as CrudPage } from "./CrudPage";
 export { default as Inbox } from "./Inbox";

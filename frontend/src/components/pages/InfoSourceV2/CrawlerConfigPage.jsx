@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pause, Play, Plus, Square, Trash2, Zap } from "lucide-react";
 import Tabs from "@/components/Tabs";
 import { api, externalUrl } from "@/lib/api";
@@ -8,6 +9,7 @@ import { useApi, useOptions, usePaged } from "@/lib/hooks";
 import { label, options } from "@/lib/labels";
 import { fmtDateTime } from "@/lib/format";
 import {
+  ActionCompletionModal,
   Badge,
   Button,
   Card,
@@ -30,6 +32,8 @@ import { CatalogTab } from "./CatalogsPage";
 const DATA_TYPES = options("dataFormat", ["TEXT", "IMAGE", "VIDEO", "AUDIO"]);
 
 function SchedulesTab() {
+  const router = useRouter();
+  const [completeModal, setCompleteModal] = useState(null);
   const sources = useOptions("/crawl-sources", (s) => ({ value: s.id, label: `${s.name} (${label("platform", s.platform)})` }));
   const topics = useOptions("/topics", (t) => ({ value: t.id, label: t.name }));
 
@@ -68,67 +72,85 @@ function SchedulesTab() {
     if (!n) return;
     try {
       const r = await api.post(`/crawl-schedules/${s.id}/run`, { count: Math.min(50, Math.max(1, Number(n) || 5)) });
-      toast.success(`Đã thu thập ${r.job?.itemsCollected ?? r.items?.length ?? 0} mẫu tin — xem ở "Kết quả thu thập tin".`);
+      const collected = r.job?.itemsCollected ?? r.items?.length ?? 0;
       reload();
+      setCompleteModal({
+        title: "Kích hoạt thu thập thành công",
+        message: `Đã thu thập thành công ${collected} mẫu tin mới từ lịch "${s.name}".`,
+        proceedText: "Tiến tới Kết quả thu thập",
+        onProceed: () => router.push("/specialist/collect-results"),
+      });
     } catch (e) {
       toast.error(e);
     }
   };
 
   return (
-    <CrudPage
-      embedded
-      title="Lịch thu thập tin"
-      cardTitle="Lịch thu thập tin"
-      subtitle="Lịch phải ở trạng thái Đang chạy mới chạy được. Mẫu tin thu về đi vào bước Kiểm tra nhanh QC."
-      path="/crawl-schedules"
-      columns={[
-        {
-          key: "n",
-          title: "Lịch",
-          render: (s) => (
-            <>
-              <div className="ui-cell-main">{s.name}</div>
-              <div className="ui-cell-sub ui-code">{s.code}</div>
-            </>
-          ),
-        },
-        { key: "src", title: "Nguồn / chủ đề", render: (s) => [s.source?.name, s.topic?.name].filter(Boolean).join(" · ") },
-        { key: "kw", title: "Từ khóa chính", render: (s) => s.primaryKeywords },
-        { key: "f", title: "Tần suất", nowrap: true, render: (s) => label("frequency", s.frequency) },
-        { key: "last", title: "Chạy gần nhất", nowrap: true, render: (s) => fmtDateTime(s.lastRunAt) || <span className="ui-muted">Chưa chạy</span> },
-        { key: "st", title: "Trạng thái", render: (s) => <StatusBadge group="crawlStatus" value={s.status} /> },
-      ]}
-      fields={fields}
-      createDefaults={{ frequency: "DAILY", dataTypes: ["TEXT"], sampleLimit: 500 }}
-      toForm={(s) => ({ ...Object.fromEntries(fields.map((f) => [f.name, s[f.name] ?? ""])), dataTypes: s.dataTypes || [] })}
-      modalWidth={760}
-      filters={(list) => (
-        <>
-          <FilterSelect list={list} name="status" label="Trạng thái" options={options("crawlStatus")} />
-          <FilterSelect list={list} name="sourceId" label="Nguồn" options={sources} />
-          <FilterSelect list={list} name="topicId" label="Chủ đề" options={topics} />
-        </>
-      )}
-      rowActions={(s, ctx) => (
-        <>
-          {s.status === "RUNNING" ? (
-            <>
-              <Button size="sm" variant="success" icon={Zap} onClick={() => run(s, ctx.reload)}>
-                Chạy ngay
+    <>
+      <CrudPage
+        embedded
+        title="Lịch thu thập tin"
+        cardTitle="Lịch thu thập tin"
+        subtitle="Lịch phải ở trạng thái Đang chạy mới chạy được. Mẫu tin thu về đi vào bước Kiểm tra nhanh QC."
+        path="/crawl-schedules"
+        columns={[
+          {
+            key: "n",
+            title: "Lịch",
+            render: (s) => (
+              <>
+                <div className="ui-cell-main">{s.name}</div>
+                <div className="ui-cell-sub ui-code">{s.code}</div>
+              </>
+            ),
+          },
+          { key: "src", title: "Nguồn / chủ đề", render: (s) => [s.source?.name, s.topic?.name].filter(Boolean).join(" · ") },
+          { key: "kw", title: "Từ khóa chính", render: (s) => s.primaryKeywords },
+          { key: "f", title: "Tần suất", nowrap: true, render: (s) => label("frequency", s.frequency) },
+          { key: "last", title: "Chạy gần nhất", nowrap: true, render: (s) => fmtDateTime(s.lastRunAt) || <span className="ui-muted">Chưa chạy</span> },
+          { key: "st", title: "Trạng thái", render: (s) => <StatusBadge group="crawlStatus" value={s.status} /> },
+        ]}
+        fields={fields}
+        createDefaults={{ frequency: "DAILY", dataTypes: ["TEXT"], sampleLimit: 500 }}
+        toForm={(s) => ({ ...Object.fromEntries(fields.map((f) => [f.name, s[f.name] ?? ""])), dataTypes: s.dataTypes || [] })}
+        modalWidth={760}
+        filters={(list) => (
+          <>
+            <FilterSelect list={list} name="status" label="Trạng thái" options={options("crawlStatus")} />
+            <FilterSelect list={list} name="sourceId" label="Nguồn" options={sources} />
+            <FilterSelect list={list} name="topicId" label="Chủ đề" options={topics} />
+          </>
+        )}
+        rowActions={(s, ctx) => (
+          <>
+            {s.status === "RUNNING" ? (
+              <>
+                <Button size="sm" variant="success" icon={Zap} onClick={() => run(s, ctx.reload)}>
+                  Chạy ngay
+                </Button>
+                <Button size="sm" variant="secondary" icon={Pause} onClick={() => act(s, "pause", ctx.reload)} aria-label="Tạm dừng" title="Tạm dừng" />
+              </>
+            ) : (
+              <Button size="sm" variant="secondary" icon={Play} onClick={() => act(s, "start", ctx.reload)}>
+                Kích hoạt
               </Button>
-              <Button size="sm" variant="secondary" icon={Pause} onClick={() => act(s, "pause", ctx.reload)} aria-label="Tạm dừng" title="Tạm dừng" />
-            </>
-          ) : (
-            <Button size="sm" variant="secondary" icon={Play} onClick={() => act(s, "start", ctx.reload)}>
-              Kích hoạt
-            </Button>
-          )}
-          {s.status !== "STOPPED" && <Button size="sm" variant="secondary" icon={Square} onClick={() => act(s, "stop", ctx.reload)} aria-label="Dừng" title="Dừng" />}
-        </>
+            )}
+            {s.status !== "STOPPED" && <Button size="sm" variant="secondary" icon={Square} onClick={() => act(s, "stop", ctx.reload)} aria-label="Dừng" title="Dừng" />}
+          </>
+        )}
+        deleteMessage={(s) => `Xóa lịch "${s.name}"?`}
+      />
+      {completeModal && (
+        <ActionCompletionModal
+          open={!!completeModal}
+          title={completeModal.title}
+          message={completeModal.message}
+          proceedText={completeModal.proceedText}
+          onStay={() => setCompleteModal(null)}
+          onProceed={completeModal.onProceed}
+        />
       )}
-      deleteMessage={(s) => `Xóa lịch "${s.name}"?`}
-    />
+    </>
   );
 }
 

@@ -144,6 +144,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_module ON audit_logs(module);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_created ON audit_logs(user_id, created_at);
 
 CREATE TABLE IF NOT EXISTS system_parameters (
   id SERIAL PRIMARY KEY,
@@ -383,6 +387,26 @@ CREATE TABLE IF NOT EXISTS ad_items (
 );
 CREATE INDEX IF NOT EXISTS idx_ad_items_status ON ad_items(status, priority DESC);
 CREATE INDEX IF NOT EXISTS idx_ad_items_hash ON ad_items(content_hash);
+-- Additional indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_ad_items_facility ON ad_items(facility_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_assigned ON ad_items(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_ad_items_final_label ON ad_items(final_label);
+CREATE INDEX IF NOT EXISTS idx_ad_items_source_type ON ad_items(source_type);
+CREATE INDEX IF NOT EXISTS idx_ad_items_platform ON ad_items(platform);
+CREATE INDEX IF NOT EXISTS idx_ad_items_collected ON ad_items(collected_at);
+CREATE INDEX IF NOT EXISTS idx_ad_items_crawl_job ON ad_items(crawl_job_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_schedule ON ad_items(schedule_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_crawl_source ON ad_items(crawl_source_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_topic ON ad_items(topic_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_data_format ON ad_items(data_format);
+CREATE INDEX IF NOT EXISTS idx_ad_items_field ON ad_items(field);
+CREATE INDEX IF NOT EXISTS idx_ad_items_suspicion_level ON ad_items(suspicion_level);
+-- Composite indexes for common query patterns
+CREATE INDEX IF NOT EXISTS idx_ad_items_status_facility ON ad_items(status, facility_id);
+CREATE INDEX IF NOT EXISTS idx_ad_items_status_assigned ON ad_items(status, assigned_to);
+CREATE INDEX IF NOT EXISTS idx_ad_items_status_collected ON ad_items(status, collected_at);
+CREATE INDEX IF NOT EXISTS idx_ad_items_facility_collected ON ad_items(facility_id, collected_at);
+CREATE INDEX IF NOT EXISTS idx_ad_items_source_collected ON ad_items(source_type, collected_at);
 
 CREATE TABLE IF NOT EXISTS whitelist_entries (
   id SERIAL PRIMARY KEY,
@@ -555,6 +579,23 @@ CREATE TABLE IF NOT EXISTS violations (
 );
 CREATE INDEX IF NOT EXISTS idx_violations_facility_status ON violations(facility_id, status);
 CREATE INDEX IF NOT EXISTS idx_violations_suspect_status ON violations(suspect_id, status);
+-- Additional indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_violations_status ON violations(status);
+CREATE INDEX IF NOT EXISTS idx_violations_facility ON violations(facility_id);
+CREATE INDEX IF NOT EXISTS idx_violations_detected ON violations(detected_at);
+CREATE INDEX IF NOT EXISTS idx_violations_assigned ON violations(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_violations_ad_item ON violations(ad_item_id);
+CREATE INDEX IF NOT EXISTS idx_violations_suspect ON violations(suspect_id);
+CREATE INDEX IF NOT EXISTS idx_violations_severity ON violations(severity);
+CREATE INDEX IF NOT EXISTS idx_violations_source ON violations(source);
+CREATE INDEX IF NOT EXISTS idx_violations_code ON violations(code);
+CREATE INDEX IF NOT EXISTS idx_violations_reach ON violations(reach);
+-- Composite indexes for common query patterns
+CREATE INDEX IF NOT EXISTS idx_violations_status_facility ON violations(status, facility_id);
+CREATE INDEX IF NOT EXISTS idx_violations_status_assigned ON violations(status, assigned_to);
+CREATE INDEX IF NOT EXISTS idx_violations_status_detected ON violations(status, detected_at);
+CREATE INDEX IF NOT EXISTS idx_violations_facility_detected ON violations(facility_id, detected_at);
+CREATE INDEX IF NOT EXISTS idx_violations_status_severity ON violations(status, severity);
 
 CREATE TABLE IF NOT EXISTS violation_type_links (
   violation_id INT NOT NULL REFERENCES violations(id) ON DELETE CASCADE,
@@ -636,6 +677,12 @@ CREATE TABLE IF NOT EXISTS facility_feedbacks (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_facility ON facility_feedbacks(facility_id);
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_status ON facility_feedbacks(status);
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_violation ON facility_feedbacks(violation_id);
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_precheck ON facility_feedbacks(precheck_id);
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_created ON facility_feedbacks(created_at);
+CREATE INDEX IF NOT EXISTS idx_facility_feedbacks_status_facility ON facility_feedbacks(status, facility_id);
 
 CREATE TABLE IF NOT EXISTS suspect_match_candidates (
   id SERIAL PRIMARY KEY,
